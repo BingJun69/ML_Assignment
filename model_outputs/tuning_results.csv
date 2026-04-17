@@ -1,0 +1,4 @@
+Model,Best CV R2,Best Parameters
+XGBoost,0.5646132516945203,"{'regressor__subsample': 0.9, 'regressor__reg_lambda': 3.0, 'regressor__reg_alpha': 0.0, 'regressor__n_estimators': 1000, 'regressor__min_child_weight': 2, 'regressor__max_depth': 4, 'regressor__learning_rate': 0.015, 'regressor__colsample_bytree': 1.0}"
+Random Forest,0.5553411835633527,"{'regressor__n_estimators': 900, 'regressor__min_samples_split': 4, 'regressor__min_samples_leaf': 1, 'regressor__max_features': 0.7, 'regressor__max_depth': 22}"
+KNN,0.19729030041535753,"{'regressor__n_neighbors': 31, 'regressor__p': 1, 'regressor__weights': 'distance'}"
