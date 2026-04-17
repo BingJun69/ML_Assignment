@@ -36,6 +36,10 @@ TIME_COLUMN = "Timestamp"
 SHOW_PLOTS = False
 ENABLE_TUNING = False
 CV_SPLITS = 3
+KEEP_OUTPUT_FILES = {
+    "model_comparison.csv",
+    "actual_predicted_scatter.png",
+}
 
 
 def load_and_prepare_data(csv_path: Path) -> tuple[pd.DataFrame, pd.Series]:
@@ -102,6 +106,13 @@ def chronological_train_test_split(
     y_train = target.iloc[:split_index].copy()
     y_test = target.iloc[split_index:].copy()
     return x_train, x_test, y_train, y_test
+
+
+def clear_output_dir() -> None:
+    OUTPUT_DIR.mkdir(exist_ok=True)
+    for path in OUTPUT_DIR.iterdir():
+        if path.is_file():
+            path.unlink()
 
 
 def save_and_display_plot(fig: plt.Figure, filename: str) -> None:
@@ -446,7 +457,7 @@ def main() -> None:
     if not DATA_PATH.exists():
         raise FileNotFoundError(f"Dataset not found: {DATA_PATH.resolve()}")
 
-    OUTPUT_DIR.mkdir(exist_ok=True)
+    clear_output_dir()
     sns.set_theme(style="whitegrid")
 
     x, y = load_and_prepare_data(DATA_PATH)
@@ -483,10 +494,6 @@ def main() -> None:
         )
         results.append(metrics)
         predictions_by_model[model_name] = comparison_df
-        comparison_df.to_csv(
-            OUTPUT_DIR / f"{model_name.lower().replace(' ', '_')}_predictions.csv",
-            index=False,
-        )
 
     results_df = pd.DataFrame(results).sort_values(by="R2 Score", ascending=False)
 
@@ -495,19 +502,8 @@ def main() -> None:
     print(f"{'=' * 60}")
     print(results_df.to_string(index=False))
 
-    if not tuning_df.empty:
-        print(f"\n{'=' * 60}")
-        print("Best Tuned Settings")
-        print(f"{'=' * 60}")
-        print(tuning_df.to_string(index=False))
-
     results_df.to_csv(OUTPUT_DIR / "model_comparison.csv", index=False)
-    save_score_plot(results_df)
-    save_metric_plot(results_df)
-    save_actual_vs_predicted_plot(predictions_by_model)
-    save_residual_plot(predictions_by_model)
     save_scatter_plot(predictions_by_model)
-    save_feature_signal_plot(x, y)
 
     best_model = results_df.iloc[0]["Model"]
     best_r2 = results_df.iloc[0]["R2 Score"]
