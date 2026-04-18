@@ -40,6 +40,18 @@ KEEP_OUTPUT_FILES = {
     "model_comparison.csv",
     "actual_predicted_scatter.png",
 }
+SELECTED_FEATURES = [
+    "Past_Ratio_1",
+    "Past_Diff_1",
+    "RollingMean_6",
+    "RollingMax_12",
+    "RollingStd_12",
+    "Past_RollingMean_12",
+    "Avg_Past_Consumption",
+    "RollingMin_12",
+    "RollingMin_6",
+    "EWM_12",
+]
 
 
 def load_and_prepare_data(csv_path: Path) -> tuple[pd.DataFrame, pd.Series]:
@@ -93,6 +105,7 @@ def load_and_prepare_data(csv_path: Path) -> tuple[pd.DataFrame, pd.Series]:
     df = df.dropna().reset_index(drop=True)
 
     features = df.drop(columns=[TARGET_COLUMN, TIME_COLUMN, "Anomaly_Label"])
+    features = features[SELECTED_FEATURES].copy()
     target = df[TARGET_COLUMN]
     return features, target
 
@@ -106,6 +119,10 @@ def chronological_train_test_split(
     y_train = target.iloc[:split_index].copy()
     y_test = target.iloc[split_index:].copy()
     return x_train, x_test, y_train, y_test
+
+
+def get_split_index(total_rows: int, test_size: float) -> int:
+    return int(total_rows * (1 - test_size))
 
 
 def clear_output_dir() -> None:
@@ -321,6 +338,42 @@ def evaluate_model(
     )
 
 
+def evaluate_baselines(target: pd.Series, split_index: int) -> pd.DataFrame:
+    baseline_predictions = {
+        "Naive Last Value": target.shift(1).iloc[split_index:],
+        "Naive Seasonal (48)": target.shift(48).iloc[split_index:],
+        "Naive Hybrid": ((target.shift(1) + target.shift(48)) / 2).iloc[split_index:],
+    }
+
+    y_test = target.iloc[split_index:]
+    rows = []
+
+    print(f"\n{'=' * 60}")
+    print("Baseline Comparison")
+    print(f"{'=' * 60}")
+
+    for baseline_name, predictions in baseline_predictions.items():
+        aligned = pd.concat([y_test, predictions.rename("Predicted")], axis=1).dropna()
+        actual = aligned.iloc[:, 0]
+        predicted = aligned["Predicted"]
+        mae = mean_absolute_error(actual, predicted)
+        mse = mean_squared_error(actual, predicted)
+        rmse = mse**0.5
+        r2 = r2_score(actual, predicted)
+        rows.append(
+            {
+                "Model": baseline_name,
+                "R2 Score": r2,
+                "MAE": mae,
+                "MSE": mse,
+                "RMSE": rmse,
+            }
+        )
+        print(f"{baseline_name:<22} R2={r2:.4f}  MAE={mae:.4f}  RMSE={rmse:.4f}")
+
+    return pd.DataFrame(rows).sort_values(by="R2 Score", ascending=False)
+
+
 def save_score_plot(results_df: pd.DataFrame) -> None:
     fig, ax = plt.subplots(figsize=(8, 5))
     sns.barplot(
@@ -461,6 +514,7 @@ def main() -> None:
     sns.set_theme(style="whitegrid")
 
     x, y = load_and_prepare_data(DATA_PATH)
+    split_index = get_split_index(len(x), TEST_SIZE)
 
     x_train, x_test, y_train, y_test = chronological_train_test_split(
         features=x,
@@ -476,6 +530,8 @@ def main() -> None:
     print(f"Testing samples  : {len(x_test)}")
     print(f"Target           : {TARGET_COLUMN}")
     print("Split method     : chronological 80/20")
+
+    baseline_df = evaluate_baselines(target=y, split_index=split_index)
 
     models = build_models()
     models, tuning_df = tune_models(models=models, x_train=x_train, y_train=y_train)
@@ -501,6 +557,10 @@ def main() -> None:
     print("Final Model Comparison")
     print(f"{'=' * 60}")
     print(results_df.to_string(index=False))
+    print(f"\n{'=' * 60}")
+    print("Model vs Baseline")
+    print(f"{'=' * 60}")
+    print(pd.concat([results_df, baseline_df], ignore_index=True).to_string(index=False))
 
     results_df.to_csv(OUTPUT_DIR / "model_comparison.csv", index=False)
     save_scatter_plot(predictions_by_model)

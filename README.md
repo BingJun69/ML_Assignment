@@ -1,38 +1,32 @@
 # Machine Learning Assignment
 
-This project predicts `Electricity_Consumed` from the smart meter dataset using three regression models:
+## Project Overview
 
-- `KNN`
+This project applies three regression models to predict `Electricity_Consumed` from a smart meter dataset:
+
+- `K-Nearest Neighbors (KNN)`
 - `Random Forest`
 - `XGBoost`
 
-The current best model is `XGBoost`, evaluated using `R2`, `MAE`, `MSE`, and `RMSE`.
+The study is framed as a regression task because the target variable is a continuous energy-consumption value. Model performance is evaluated using `R2 Score`, `MAE`, `MSE`, and `RMSE`.
 
-## Latest Results
+## Dataset Description
 
-| Model | R2 Score | MAE | MSE | RMSE |
-|---|---:|---:|---:|---:|
-| XGBoost | 0.588573 | 0.082720 | 0.010826 | 0.104047 |
-| Random Forest | 0.573985 | 0.084224 | 0.011210 | 0.105875 |
-| KNN | 0.175227 | 0.117820 | 0.021702 | 0.147316 |
-
-## Dataset
-
-Source file:
+Dataset file:
 
 - `smart_meter_data.csv`
 
-Main columns in the dataset:
+Main variables:
 
-- `Timestamp`: date and time of the reading
-- `Electricity_Consumed`: target variable to predict
-- `Temperature`: normalized temperature value
-- `Humidity`: normalized humidity value
-- `Wind_Speed`: normalized wind speed value
-- `Avg_Past_Consumption`: historical average consumption
-- `Anomaly_Label`: anomaly tag from the original dataset, not used as the regression target
+- `Timestamp`: date and time of each smart meter reading
+- `Electricity_Consumed`: target variable
+- `Temperature`: normalized temperature reading
+- `Humidity`: normalized humidity reading
+- `Wind_Speed`: normalized wind speed reading
+- `Avg_Past_Consumption`: historical average electricity consumption
+- `Anomaly_Label`: anomaly tag from the original dataset
 
-Example rows:
+Sample records:
 
 | Timestamp | Electricity_Consumed | Temperature | Humidity | Wind_Speed | Avg_Past_Consumption | Anomaly_Label |
 |---|---:|---:|---:|---:|---:|---|
@@ -42,46 +36,96 @@ Example rows:
 | 2024-01-01 01:30:00 | 0.628838 | 0.482095 | 0.512308 | 0.576241 | 0.757044 | Normal |
 | 2024-01-01 02:00:00 | 0.335974 | 0.624741 | 0.672021 | 0.373004 | 0.673981 | Normal |
 
-## Features Used
+## Data Preparation
 
-The script builds extra features from the original data, including:
+The data preparation process includes:
 
-- time-based features from `Timestamp`
-- lag features from past electricity consumption
-- rolling statistics
-- exponential weighted moving averages
-- interaction features between weather variables
+- converting `Timestamp` to datetime format
+- sorting records chronologically
+- generating time-based and historical features
+- removing rows with missing values created by lag and rolling operations
+- splitting the dataset chronologically into training and testing sets
 
-These engineered features help the models learn consumption patterns over time.
+To avoid target leakage, only past information is used when constructing lag and rolling features.
 
-## Models
+## Selected Features
 
-The project compares three regression models:
+The final regression models use the following predictors:
+
+- `Past_Ratio_1`
+- `Past_Diff_1`
+- `RollingMean_6`
+- `RollingMax_12`
+- `RollingStd_12`
+- `Past_RollingMean_12`
+- `Avg_Past_Consumption`
+- `RollingMin_12`
+- `RollingMin_6`
+- `EWM_12`
+
+These variables summarize short-term history and recent consumption behavior, which are the most informative signals for the target.
+
+## Models Used
+
+The following regression models are compared:
 
 1. `KNeighborsRegressor`
 2. `RandomForestRegressor`
 3. `XGBRegressor`
 
-The script uses the tuned settings already found for each model.
+The script uses fixed training settings based on earlier parameter selection and trains all three models on the same chronological split.
 
-## Evaluation
+## Evaluation Metrics
 
-Main evaluation metric:
+The models are evaluated using:
 
 - `R2 Score`
-
-Additional metrics:
-
 - `MAE`
 - `MSE`
 - `RMSE`
 
-The script also saves:
+In addition, simple time-series baselines are included for reference:
+
+- `Naive Last Value`
+- `Naive Seasonal (48)`
+- `Naive Hybrid`
+
+## Final Results
+
+| Model | R2 Score | MAE | MSE | RMSE |
+|---|---:|---:|---:|---:|
+| XGBoost | 0.594886 | 0.081731 | 0.010660 | 0.103246 |
+| Random Forest | 0.581963 | 0.082663 | 0.011000 | 0.104879 |
+| KNN | 0.515218 | 0.090458 | 0.012756 | 0.112942 |
+
+Baseline comparison:
+
+| Baseline | R2 Score | MAE | RMSE |
+|---|---:|---:|---:|
+| Naive Hybrid | -0.545203 | 0.161883 | 0.201640 |
+| Naive Seasonal (48) | -1.025817 | 0.183463 | 0.230878 |
+| Naive Last Value | -1.049933 | 0.188160 | 0.232248 |
+
+## Discussion
+
+The three machine learning models outperform the naive baseline methods by a clear margin. Among them, `XGBoost` records the highest `R2 Score`, with `Random Forest` producing a very similar result. `KNN` also performs reasonably in the final feature space, although it remains below the tree-based approaches.
+
+The results indicate that recent historical consumption patterns are more informative than broad weather or calendar features alone. Short-term rolling statistics and recent historical ratios provide useful information for estimating the next electricity-consumption value.
+
+## Output Files
+
+Each run of the script writes:
 
 - `model_outputs/model_comparison.csv`
 - `model_outputs/actual_predicted_scatter.png`
 
-## Run The Project
+The output directory is cleaned at the start of each run so only the latest result files remain.
+
+## Visual Output
+
+![Actual vs Predicted Scatter Plot](model_outputs/actual_predicted_scatter.png)
+
+## Running The Project
 
 Install dependencies:
 
@@ -89,29 +133,14 @@ Install dependencies:
 python -m pip install pandas scikit-learn xgboost matplotlib seaborn
 ```
 
-Run the script:
+Run the project:
 
 ```powershell
 python mlass.py
 ```
 
-## Output
+## Repository Notes
 
-After running the script, the results are written to:
-
-- `model_outputs/model_comparison.csv`
-- `model_outputs/actual_predicted_scatter.png`
-
-## Model Comparison Plot
-
-![Actual vs Predicted Scatter Plot](model_outputs/actual_predicted_scatter.png)
-
-## Notes
-
-- The target is `Electricity_Consumed`, so this is a regression problem, not a classification problem.
-- `Timestamp` is used through engineered time features rather than as a raw string.
-- Only leakage-safe historical features are used, meaning the current target value is not directly fed back into the model.
-
-## Conclusion
-
-Among the three models, `XGBoost` produced the best overall performance, followed closely by `Random Forest`. `KNN` performed much worse, which suggests this problem benefits more from tree-based nonlinear learning than distance-based regression. The results also show that time-based feature engineering and historical lag information are important for predicting electricity consumption.
+- the project keeps the source code, dataset, and latest result files in the repository
+- the assignment PDF is ignored and not tracked in Git
+- the project is organized for sharing and collaboration through GitHub
