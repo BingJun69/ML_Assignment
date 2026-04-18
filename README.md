@@ -84,12 +84,6 @@ The models are evaluated using:
 - `MSE`
 - `RMSE`
 
-In addition, simple time-series baselines are included for reference:
-
-- `Naive Last Value`
-- `Naive Seasonal (48)`
-- `Naive Hybrid`
-
 ## Final Results
 
 | Model | R2 Score | MAE | MSE | RMSE |
@@ -98,17 +92,9 @@ In addition, simple time-series baselines are included for reference:
 | Random Forest | 0.581963 | 0.082663 | 0.011000 | 0.104879 |
 | KNN | 0.515218 | 0.090458 | 0.012756 | 0.112942 |
 
-Baseline comparison:
-
-| Baseline | R2 Score | MAE | RMSE |
-|---|---:|---:|---:|
-| Naive Hybrid | -0.545203 | 0.161883 | 0.201640 |
-| Naive Seasonal (48) | -1.025817 | 0.183463 | 0.230878 |
-| Naive Last Value | -1.049933 | 0.188160 | 0.232248 |
-
 ## Discussion
 
-The three machine learning models outperform the naive baseline methods by a clear margin. Among them, `XGBoost` records the highest `R2 Score`, with `Random Forest` producing a very similar result. `KNN` also performs reasonably in the final feature space, although it remains below the tree-based approaches.
+Among the three machine learning models, `XGBoost` records the highest `R2 Score`, with `Random Forest` producing a very similar result. `KNN` also performs reasonably in the final feature space, although it remains below the tree-based approaches.
 
 The results indicate that recent historical consumption patterns are more informative than broad weather or calendar features alone. Short-term rolling statistics and recent historical ratios provide useful information for estimating the next electricity-consumption value.
 
