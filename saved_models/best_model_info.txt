@@ -1,0 +1,5 @@
+Best model: XGBoost
+R2 Score: 0.593947
+MAE: 0.082072
+MSE: 0.010714
+RMSE: 0.103510
