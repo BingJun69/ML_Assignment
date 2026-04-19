@@ -56,6 +56,16 @@ The selected features are:
 | Random Forest | 0.581963 | 0.082663 | 0.011000 | 0.104879 |
 | KNN | 0.515218 | 0.090458 | 0.012756 | 0.112942 |
 
+## Discussion
+
+The three models all learn meaningful patterns from the engineered time-series features, but `XGBoost` performs best overall. Its slightly higher `R2 Score` and lower error values suggest it captures the nonlinear relationship between historical consumption and the target more effectively than the other models.
+
+`Random Forest` is very close to `XGBoost`, which indicates that tree-based methods are well suited to this dataset. Both models benefit from the lag, rolling, and exponentially weighted features, which provide short-term memory of past electricity usage.
+
+`KNN` performs noticeably worse than the tree-based models, but it still produces a reasonable score. This is expected because distance-based methods are more sensitive to feature scaling and can struggle when the relationship between variables is highly nonlinear and time-dependent.
+
+Overall, the results show that recent historical consumption is more informative than raw weather variables alone. The selected features help the models capture both short-term fluctuations and broader usage trends.
+
 ## Output Files
 
 Each run writes:
@@ -64,28 +74,6 @@ Each run writes:
 - `model_outputs/actual_predicted_scatter.png`
 - `saved_models/best_model.joblib`
 - `saved_models/best_model_info.txt`
-
-## Run
-
-Install dependencies:
-
-```powershell
-python -m pip install pandas scikit-learn xgboost matplotlib seaborn joblib
-```
-
-Train and evaluate:
-
-```powershell
-python mlass.py
-```
-
-Predict on another CSV with the saved model:
-
-```powershell
-python mlass.py --predict-only new_smart_meter_data.csv
-```
-
-The new CSV should use the same column structure as the training data.
 
 ## Visual
 
